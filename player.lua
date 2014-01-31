@@ -69,9 +69,7 @@ function GM:PlayerSpawn(ply)
    ply.has_spawned = true
 
    -- let the client do things on spawn
-   net.Start("TTT_PlayerSpawned")
-      net.WriteBit(ply:IsSpec())
-   net.Send(ply)
+   SendUserMessage("plyspawned", ply, ply:IsSpec())
 
    if ply:IsSpec() then
       ply:StripAll()
@@ -665,7 +663,7 @@ function GM:PlayerDeath( victim, infl, attacker)
 
    victim:Extinguish()
 
-   net.Start("TTT_PlayerDied") net.Send(ply)
+   SendUserMessage("plydied", victim)
 
    if HasteMode() and GetRoundState() == ROUND_ACTIVE then
       IncRoundEnd(GetConVar("ttt_haste_minutes_per_death"):GetFloat() * 60)
@@ -783,7 +781,7 @@ end
 -- rather high drop already. Hence we do our own fall damage handling in
 -- OnPlayerHitGround.
 function GM:GetFallDamage(ply, speed)
-   return 1
+   return 0
 end
 
 local fallsounds = {
@@ -830,16 +828,20 @@ function GM:OnPlayerHitGround(ply, in_water, on_floater, speed)
          dmg:SetAttacker(att)
          dmg:SetInflictor(att)
          dmg:SetDamageForce(Vector(0,0,-1))
-         dmg:SetDamage(damage)
+         --dmg:SetDamage(damage)
+		 dmg:SetDamage(0)
 
          ground:TakeDamageInfo(dmg)
       end
 
       -- our own falling damage is cushioned
-      damage = damage / 3
+      --damage = damage / 3
+	  damage = 0
    end
 
    if math.floor(damage) > 0 then
+      --No fall damage
+	  damage = 0
       local dmg = DamageInfo()
       dmg:SetDamageType(DMG_FALL)
       dmg:SetAttacker(game.GetWorld())
@@ -848,11 +850,16 @@ function GM:OnPlayerHitGround(ply, in_water, on_floater, speed)
       dmg:SetDamage(damage)
 
       ply:TakeDamageInfo(dmg)
+	  
+	  --No fall damage, dont log it
+	  --LogFall(ply, damage)
 
       -- play CS:S fall sound if we got somewhat significant damage
+	  --[[
       if damage > 5 then
          sound.Play(table.Random(fallsounds), ply:GetShootPos(), 55 + math.Clamp(damage, 0, 50), 100)
       end
+	  ]]--
    end
 end
 
@@ -983,15 +990,19 @@ function GM:PlayerTakeDamage(ent, infl, att, amount, dmginfo)
 
       -- player falling on player, or player hurt by prop?
       if not dmginfo:IsDamageType(DMG_PHYSGUN) then
+	  
+		if IsValid(infl) and infl:GetNWEntity("spec_owner", nil):IsPlayer() then 
+			dmginfo:SetDamage(0) 
+		else
+			 -- this is prop-based physics damage
+			 dmginfo:ScaleDamage(0.25)
 
-         -- this is prop-based physics damage
-         dmginfo:ScaleDamage(0.25)
-
-         -- if the prop is held, no damage
-         if IsValid(infl) and IsValid(infl:GetOwner()) and infl:GetOwner():IsPlayer() then
-            dmginfo:ScaleDamage(0)
-            dmginfo:SetDamage(0)
-         end
+			 -- if the prop is held, no damage
+			 if IsValid(infl) and IsValid(infl:GetOwner()) and infl:GetOwner():IsPlayer() then
+				dmginfo:ScaleDamage(0)
+				dmginfo:SetDamage(0)
+			 end
+		end
       end
    end
 
@@ -1031,6 +1042,8 @@ function GM:PlayerTakeDamage(ent, infl, att, amount, dmginfo)
 
       -- process the effects of the damage on karma
       KARMA.Hurt(att, ent, dmginfo)
+	  
+	  LogDamage(att, ent, dmginfo)
 
       DamageLog(Format("DMG: \t %s [%s] damaged %s [%s] for %d dmg", att:Nick(), att:GetRoleString(), ent:Nick(), ent:GetRoleString(), math.Round(dmginfo:GetDamage())))
    end
