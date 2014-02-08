@@ -198,27 +198,26 @@ function PANEL:UpdatePlayerData()
      
   if ply:IsUserGroup("owner") then
   self.cols[5]:SetText("Owner")
-  self.cols[5]:SetTextColor(Color(25,232, 109))
+  self.cols[5]:SetTextColor(ColorForPlayer(ply))
   end
     
   if ply:IsUserGroup("superadmin") then
   self.cols[5]:SetText("S.Admin")
-  self.cols[5]:SetTextColor(Color(204,102,0))
+  self.cols[5]:SetTextColor(ColorForPlayer(ply))
   end
     
 if ply:IsUserGroup("admin") then
   self.cols[5]:SetText("Admin")
-  self.cols[5]:SetTextColor(Color(255,149,0))
+  self.cols[5]:SetTextColor(ColorForPlayer(ply))
 end
      
   if ply:IsUserGroup("moderator") then
   self.cols[5]:SetText("Mod")
-  self.cols[5]:SetTextColor(Color(238,255,46))
+  self.cols[5]:SetTextColor(ColorForPlayer(ply))
 end
   
   if ply:IsUserGroup("trusted") then
   self.cols[5]:SetText("Trusted")
-  --self.cols[5]:SetTextColor(Color(127,0,255))
 end
   
 if ply:IsUserGroup("member") then
